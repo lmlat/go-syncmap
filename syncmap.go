@@ -305,8 +305,9 @@ func (m *Map) LoadAndDelete(key any) (value any, loaded bool) {
 }
 
 // Delete deletes the value for a key.
-func (m *Map) Delete(key any) {
-	m.LoadAndDelete(key)
+func (m *Map) Delete(key any) bool {
+	_, loaded := m.LoadAndDelete(key)
+	return loaded
 }
 
 func (e *entry) delete() (value any, ok bool) {
