@@ -69,7 +69,8 @@ type Map struct {
 	// map, the dirty map will be promoted to the read map (in the unamended
 	// state) and the next store to the map will make a new dirty copy.
 	misses int
-	// 统计键值对数量
+
+	// size count the number of key-value pairs
 	size int64
 }
 
@@ -168,9 +169,7 @@ func (m *Map) Store(key, value any) {
 // If the entry is expunged, tryCompareAndSwap returns false and leaves
 // the entry unchanged.
 func (e *entry) tryCompareAndSwap(old, new any) bool {
-	// 获取映射的指针
 	p := e.p.Load()
-	// 如果指针为空, 或者映射被标记为已删除(expunged), 或者映射值与 old 值不等于, 将返回false表示删除失败
 	if p == nil || p == expunged || *p != old {
 		return false
 	}
@@ -180,11 +179,10 @@ func (e *entry) tryCompareAndSwap(old, new any) bool {
 	// bother heap-allocating an interface value to store.
 	nc := new
 	for {
-		// 使用 CompareAndSwap 方法进行比较并交换
 		if e.p.CompareAndSwap(p, &nc) {
 			return true
 		}
-		// 重新获取映射的指针
+
 		p = e.p.Load()
 		if p == nil || p == expunged || *p != old {
 			return false
@@ -280,20 +278,15 @@ func (e *entry) tryLoadOrStore(i any) (actual any, loaded, ok bool) {
 // LoadAndDelete deletes the value for a key, returning the previous value if any.
 // The loaded result reports whether the key was present.
 func (m *Map) LoadAndDelete(key any) (value any, loaded bool) {
-	// 获取只读状态的映射
 	read := m.loadReadOnly()
-	// 检查只读映射表中是否存在指定键的映射
 	e, ok := read.m[key]
-	// 如果在只读映射中没有找到键，并且映射已经被修改过
 	if !ok && read.amended {
 		m.mu.Lock()
 		read = m.loadReadOnly()
 		e, ok = read.m[key]
 		if !ok && read.amended {
-			// 从映射表中获取指定键的映射，并删除该键
 			e, ok = m.dirty[key]
 			delete(m.dirty, key)
-			fmt.Println("amended:", ok, e)
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
@@ -301,11 +294,8 @@ func (m *Map) LoadAndDelete(key any) (value any, loaded bool) {
 		}
 		m.mu.Unlock()
 	}
-	// 两种情况会走这个逻辑
-	// 1. 如果只读映射表中找到指定键的映射
-	// 2. 如果在dirty映射表中找到了指定键的映射
 	if ok {
-		value, loaded = e.delete() // 将对应键的映射值设置为nil
+		value, loaded = e.delete()
 		if loaded {
 			atomic.AddInt64(&m.size, -1)
 		}
@@ -325,7 +315,7 @@ func (e *entry) delete() (value any, ok bool) {
 		if p == nil || p == expunged {
 			return nil, false
 		}
-		// 尝试将指针置为nil
+		// 将 p 指针指向的值置为nil
 		if e.p.CompareAndSwap(p, nil) {
 			// 返回原始值和删除成功的标志
 			return *p, true
@@ -380,14 +370,12 @@ func (m *Map) Swap(key, value any) (previous any, loaded bool) {
 			previous = *v
 		}
 	} else {
-		// 如果键不在映射中
 		if !read.amended {
 			// We're adding the first new key to the dirty map.
 			// Make sure it is allocated and mark the read-only map as incomplete.
 			m.dirtyLocked()
 			m.read.Store(&readOnly{m: read.m, amended: true})
 		}
-		// 创建新的映射并添加到映射表中
 		m.dirty[key] = newEntry(value)
 		atomic.AddInt64(&m.size, 1)
 	}
@@ -399,9 +387,7 @@ func (m *Map) Swap(key, value any) (previous any, loaded bool) {
 // if the value stored in the map is equal to old.
 // The old value must be of a comparable type.
 func (m *Map) CompareAndSwap(key, old, new any) bool {
-	// 读取只读状态的映射
 	read := m.loadReadOnly()
-	// 如果在只读映射中找到键对应的映射
 	if e, ok := read.m[key]; ok {
 		// 执行 tryCompareAndSwap 方法尝试进行比较并交换
 		return e.tryCompareAndSwap(old, new)
@@ -411,15 +397,11 @@ func (m *Map) CompareAndSwap(key, old, new any) bool {
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	// 再次读取只读状态的映射
 	read = m.loadReadOnly()
 	swapped := false
-	// 如果在只读映射中找到键对应的映射
 	if e, ok := read.m[key]; ok {
-		// 执行 tryCompareAndSwap 方法尝试进行比较并交换
 		swapped = e.tryCompareAndSwap(old, new)
 	} else if e, ok := m.dirty[key]; ok {
-		// 如果在脏映射中找到键对应的映射, 同样也是执行 tryCompareAndSwap 方法尝试进行比较并交换
 		swapped = e.tryCompareAndSwap(old, new)
 		// We needed to lock mu in order to load the entry for key,
 		// and the operation didn't change the set of keys in the map
@@ -438,20 +420,13 @@ func (m *Map) CompareAndSwap(key, old, new any) bool {
 // If there is no current value for key in the map, CompareAndDelete
 // returns false (even if the old value is the nil interface value).
 func (m *Map) CompareAndDelete(key, old any) (deleted bool) {
-	// 读取只读状态的映射
 	read := m.loadReadOnly()
-	// 从只读映射表中获取键对应的映射
 	e, ok := read.m[key]
-	// 如果在只读映射表中找不到键(key)，并且只读映射已经被修改过
 	if !ok && read.amended {
 		m.mu.Lock()
-		// 再次读取只读状态的映射
 		read = m.loadReadOnly()
-		// 从只读映射表中获取键对应的映射
 		e, ok = read.m[key]
-		// 如果在只读映射表中仍然找不到键(key)，并且只读映射已经被修改过
 		if !ok && read.amended {
-			// 从映射表中获取键对应的映射
 			e, ok = m.dirty[key]
 			// Don't delete key from m.dirty: we still need to do the “compare” part
 			// of the operation. The entry will eventually be expunged when the
@@ -466,13 +441,10 @@ func (m *Map) CompareAndDelete(key, old any) (deleted bool) {
 	}
 	//
 	for ok {
-		// 获取映射对应的指针
 		p := e.p.Load()
-		// 如果指针为空, 或者映射被标记为已删除(expunged), 或者该映射的值与 old 值不等于, 将返回false表示删除失败
 		if p == nil || p == expunged || *p != old {
 			return false
 		}
-		// 否则使用 CompareAndSwap 方法将映射对应的指针置为nil, 表示删除该映射
 		if e.p.CompareAndSwap(p, nil) {
 			atomic.AddInt64(&m.size, -1) // 键值对数量减1
 			return true
@@ -510,6 +482,7 @@ func (m *Map) Range(f func(key, value any) bool) {
 			m.read.Store(&read)
 			m.dirty = nil
 			m.misses = 0
+			m.size = 0
 		}
 		m.mu.Unlock()
 	}
@@ -525,8 +498,14 @@ func (m *Map) Range(f func(key, value any) bool) {
 	}
 }
 
+// Len returns the number of elements within the map.
 func (m *Map) Len() int64 {
 	return atomic.LoadInt64(&m.size)
+}
+
+// IsEmpty checks if map is empty.
+func (m *Map) IsEmpty() bool {
+	return m.Len() == 0
 }
 
 func (m *Map) String() string {
@@ -549,11 +528,9 @@ func (m *Map) String() string {
 
 func (m *Map) missLocked() {
 	m.misses++
-	// 如果 misses 小于 dirty 的长度, 表示只读映射表中的数据还没有达到缓存失效的阈值
 	if m.misses < len(m.dirty) {
 		return
 	}
-	// 将 dirty 映射表中的映射提升为只读映射
 	m.read.Store(&readOnly{m: m.dirty})
 	m.dirty = nil
 	m.misses = 0
@@ -565,16 +542,13 @@ func (m *Map) dirtyLocked() {
 		return
 	}
 	read := m.loadReadOnly()
-	// 初始化dirty映射表
 	m.dirty = make(map[any]*entry, len(read.m))
-	// 遍历只读映射, 并将未添加删除标记的映射添加到dirty映射表中
 	for k, e := range read.m {
 		if !e.tryExpungeLocked() {
 			m.dirty[k] = e
 		}
 	}
-	// 重置键值对数量
-	atomic.StoreInt64(&m.size, int64(len(m.dirty)))
+	m.size = int64(len(m.dirty))
 }
 
 func (e *entry) tryExpungeLocked() (isExpunged bool) {

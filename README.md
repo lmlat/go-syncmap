@@ -6,14 +6,32 @@ sync.Map 是 Go 语言标准库中的一个并发安全的键值对集合, 用�
 在 sync.Map 类型中增加了一个 int64 类型的属性 size, 分别在 Swap、LoadOrStore、LoadAndDelete、CompareAndDelete、dirtyLocked、missLocked方法中新增了对 size 属性的处理逻辑。
 
 # 用法
+下载:
 ```go
-// 实例化
+go get "github.com/lmlat/syncmap"
+```
+导入: 
+```go
+import "github.com/lmlat/syncmap"
+```
+注意: 导包后, 默认所有的类型都定义名为 `ts` 的包中。
+
+示例: 
+```go
+
+// 实例化一个并发Map
 m := new(ts.Map)
-// 添加键值对
+
+// 检查Map是否为空
+fmt.Println(m.IsEmpty()) // {name=aitao, age=100}
+
+// 向Map中添加键值对
 m.Store("name", "aitao")
 m.Store("age", 100)
+
 // 打印键值对内容
 fmt.Println(m.String()) // {name=aitao, age=100}
+
 // 打印键值对数量
 fmt.Println(m.Len()) // 2
 ```
