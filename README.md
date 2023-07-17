@@ -13,7 +13,7 @@ m := new(ts.Map)
 m.Store("name", "aitao")
 m.Store("age", 100)
 // 打印键值对内容
-fmt.Println(m.String()) // {}
+fmt.Println(m.String()) // {name=aitao, age=100}
 // 打印键值对数量
 fmt.Println(m.Len()) // 2
 ```
