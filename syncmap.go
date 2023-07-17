@@ -510,6 +510,21 @@ func (m *Map) IsEmpty() bool {
 	return m.Len() == 0
 }
 
+// Equals compares maps for equality and returns true only if the types and values of maps are equal.
+func (m *Map) Equals(other *Map) (eq bool) {
+	if m.size != other.size {
+		return false
+	}
+	m.Range(func(key, value any) bool {
+		if v, ok := m.Load(key); !ok || v != value {
+			eq = false
+			return eq
+		}
+		return true
+	})
+	return
+}
+
 func (m *Map) Clone() (cloneMap *Map) {
 	cloneMap = &Map{}
 	m.Range(func(key, value any) bool {
