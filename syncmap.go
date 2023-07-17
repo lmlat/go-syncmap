@@ -510,6 +510,15 @@ func (m *Map) IsEmpty() bool {
 	return m.Len() == 0
 }
 
+func (m *Map) Clone() (cloneMap *Map) {
+	cloneMap = &Map{}
+	m.Range(func(key, value any) bool {
+		cloneMap.Store(key, value)
+		return true
+	})
+	return
+}
+
 func (m *Map) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("{")
