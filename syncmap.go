@@ -1,4 +1,4 @@
-package concurrenthashmap
+package ts
 
 import (
 	"bytes"
