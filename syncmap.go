@@ -157,9 +157,10 @@ func (e *entry) load() (value any, ok bool) {
 	return *p, true
 }
 
-// Store sets the value for a key.
-func (m *Map) Store(key, value any) {
-	_, _ = m.Swap(key, value)
+// Store set the value of the key, returning true if the setting is successful, false otherwise.
+func (m *Map) Store(key, value any) bool {
+	_, loaded := m.Swap(key, value)
+	return !loaded
 }
 
 // tryCompareAndSwap compare the entry with the given old value and swaps
