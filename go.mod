@@ -1,3 +1,3 @@
-module github.com/lmlat/go-syncmap
+module github.com/lmlat/syncmap
 
 go 1.20
