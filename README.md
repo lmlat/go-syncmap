@@ -8,11 +8,11 @@ sync.Map 是 Go 语言标准库中的一个并发安全的键值对集合, 用�
 # 用法
 下载:
 ```go
-go get "github.com/lmlat/syncmap"
+go get "github.com/lmlat/go-syncmap"
 ```
 导入: 
 ```go
-import "github.com/lmlat/syncmap"
+import "github.com/lmlat/go-syncmap"
 ```
 注意: 导包后, 默认所有的类型都定义名为 `ts` 的包中。
 
