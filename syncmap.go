@@ -484,7 +484,6 @@ func (m *Map) Range(f func(key, value any) bool) {
 			m.read.Store(&read)
 			m.dirty = nil
 			m.misses = 0
-			m.size = 0
 		}
 		m.mu.Unlock()
 	}
@@ -512,11 +511,19 @@ func (m *Map) IsEmpty() bool {
 
 // Equals compares maps for equality and returns true only if the types and values of maps are equal.
 func (m *Map) Equals(other *Map) (eq bool) {
-	if m.size != other.size {
+	mCopy := m.Clone()
+	otherCopy := other.Clone()
+	if mCopy == otherCopy {
+		return true
+	}
+	if mCopy.Len() != otherCopy.Len() {
+		fmt.Println(mCopy.Len(), other.Len())
 		return false
 	}
-	m.Range(func(key, value any) bool {
-		if v, ok := m.Load(key); !ok || v != value {
+	eq = true
+	mCopy.Range(func(key, value any) bool {
+		if v, ok := other.Load(key); !ok || v != value {
+			fmt.Println(v, value)
 			eq = false
 			return eq
 		}
@@ -528,8 +535,7 @@ func (m *Map) Equals(other *Map) (eq bool) {
 func (m *Map) Clone() (cloneMap *Map) {
 	cloneMap = &Map{}
 	m.Range(func(key, value any) bool {
-		cloneMap.Store(key, value)
-		return true
+		return cloneMap.Store(key, value)
 	})
 	return
 }
@@ -538,7 +544,6 @@ func (m *Map) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("{")
 	first := true
-
 	m.Range(func(key, value any) bool {
 		if !first {
 			buf.WriteString(", ")
@@ -547,7 +552,6 @@ func (m *Map) String() string {
 		first = false
 		return true
 	})
-
 	buf.WriteString("}")
 	return buf.String()
 }
