@@ -5,10 +5,18 @@ on:
       - master
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test on go ${{ matrix.go_version }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        go_version: 1.20
+
     steps:
-      - name: Check out code into the Go module directory
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v2
+
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Upload coverage reports to Codecov
@@ -16,20 +24,25 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Set up Go 1.20
-        uses: actions/setup-go@v2
-
-      - name: install dependencies
-        run: |
-          go get -v -t -d ./...
-        with:
-          go-version: 1.20
-
-      - name: go build
-        run: go build -v ./...
+      - name: Set up Go ${{ matrix.go_version }}
+        uses: actions/setup-go@v1
 
       - name: go test
-        run: go test -v ./...
+        run: go test -coverprofile="profile.cov" ./...
 
-      - name: benchmark tests
-        run: go test -timeout 300s -bench=. -benchmem
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go_version }}
+          parallel: true
+  # notifies that all test jobs are finished.
+  # https://github.com/shogo82148/actions-goveralls
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
