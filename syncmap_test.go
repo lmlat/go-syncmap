@@ -70,21 +70,16 @@ func TestMap_Equals(t *testing.T) {
 }
 
 func TestMap_Concurrent_Equals(t *testing.T) {
-	// 创建两个并发Map对象
 	map1 := &ts.Map{}
 	map2 := &ts.Map{}
 
-	// 往map1中存入键值对
 	map1.Store("a", "aaa")
 	map1.Store("b", "bbb")
 	map1.Store("c", "ccc")
 
-	// 创建一个等待组，用于等待所有测试goroutine执行完毕
 	wg := sync.WaitGroup{}
-	// 设置测试并发数
 	concurrency := 10
 	wg.Add(concurrency)
-	// 启动多个测试goroutine，每个goroutine执行一次Equals方法，并输出比较结果
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			defer wg.Done()
@@ -99,7 +94,8 @@ func TestMap_Concurrent_Equals(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	fmt.Println(map1, map2)
+	fmt.Println("map1:", map1)
+	fmt.Println("map2:", map2)
 	if map1.Equals(map2) {
 		fmt.Println("After concurrency test - Maps are equal.")
 	} else {
@@ -124,8 +120,8 @@ func TestMap_Concurrency(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	fmt.Println(m.Len())
-	fmt.Println("成功数:", count)
+	fmt.Println(m.Len()) // 键值对数量
+	fmt.Println(count)   // 测试用例成功数量
 }
 
 // 测试并发访问
@@ -182,7 +178,8 @@ func TestMap_Swap(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		m.Swap(i, i*10)
 	}
-	fmt.Println("map:", m.String(), m.Len())
+	fmt.Println(m)
+	fmt.Println(m.Len())
 }
 
 func TestMap_CompareAndSwap(t *testing.T) {

@@ -511,21 +511,19 @@ func (m *Map) IsEmpty() bool {
 
 // Equals compares maps for equality and returns true only if the types and values of maps are equal.
 func (m *Map) Equals(other *Map) (eq bool) {
-	mCopy := m.Clone()
-	otherCopy := other.Clone()
-	if mCopy == otherCopy {
+	mClone := m.Clone()
+	otherClone := other.Clone()
+	if mClone == otherClone {
 		return true
 	}
-	if mCopy.Len() != otherCopy.Len() {
-		fmt.Println(mCopy.Len(), other.Len())
+	if mClone.Len() != otherClone.Len() {
 		return false
 	}
 	eq = true
-	mCopy.Range(func(key, value any) bool {
-		if v, ok := other.Load(key); !ok || v != value {
-			fmt.Println(v, value)
+	mClone.Range(func(key, value any) bool {
+		if v, ok := otherClone.Load(key); !ok || v != value {
 			eq = false
-			return eq
+			return false
 		}
 		return true
 	})
